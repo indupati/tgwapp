@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D&D Dice Roller</title>
+    <style>
+        /* Main Styles */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .container {
+            background-color: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .dice-bag {
+            order: 1;
+            background-color: #ecf0f1;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .dice-selection {
+            order: 2;
+            margin-bottom: 25px;
+        }
+
+        .dice-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .dice-button {
+            padding: 12px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-width: 60px;
+        }
+
+        .dice-button:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+        }
+
+        .dice-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .dice-entry {
+            display: flex;
+            align-items: center;
+            background-color: #bdc3c7;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+
+        .remove-button {
+            margin-left: 8px;
+            background: none;
+            border: none;
+            color: #e74c3c;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            padding: 0 5px;
+        }
+
+        .action-buttons {
+            order: 3;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .action-button {
+            padding: 12px 25px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .clear-button {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        .clear-button:hover {
+            background-color: #c0392b;
+        }
+
+        .roll-button {
+            background-color: #2ecc71;
+            color: white;
+        }
+
+        .roll-button:hover {
+            background-color: #27ae60;
+        }
+
+        .error {
+            color: #e74c3c;
+            margin-top: 15px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal {
+            background-color: white;
+            padding: 25px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 350px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            transform: translateY(-20px);
+            transition: transform 0.3s;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-overlay.active .modal {
+            transform: translateY(0);
+        }
+
+        .modal h3 {
+            margin-top: 0;
+            color: #2c3e50;
+            text-align: center;
+        }
+
+        .modal-content {
+            margin: 20px 0;
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+
+        /* Numpad Styles */
+        .quantity-display {
+            font-size: 24px;
+            text-align: center;
+            margin: 15px 0;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            min-height: 36px;
+        }
+
+        .numpad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .numpad-button {
+            padding: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            background-color: #f1f1f1;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .numpad-button:hover {
+            background-color: #e0e0e0;
+        }
+
+        .numpad-button.control {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        .numpad-button.control:hover {
+            background-color: #c0392b;
+        }
+
+        .modal-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+
+        .modal-button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .cancel-button {
+            background-color: #95a5a6;
+            color: white;
+        }
+
+        .cancel-button:hover {
+            background-color: #7f8c8d;
+        }
+
+        .add-button {
+            background-color: #2ecc71;
+            color: white;
+        }
+
+        .add-button:hover {
+            background-color: #27ae60;
+        }
+
+        /* JSON Display Styles */
+        .json-display-container {
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 5px;
+        }
+
+        .json-display {
+            font-family: monospace;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            margin: 0;
+            padding: 10px;
+        }
+
+        /* Responsive Styles */
+        @media (max-width: 600px) {
+            .dice-buttons {
+                gap: 8px;
+            }
+            .dice-button {
+                padding: 10px 15px;
+                font-size: 14px;
+                min-width: 50px;
+            }
+            .numpad-button {
+                padding: 12px;
+                font-size: 16px;
+            }
+            .modal {
+                max-height: 80vh;
+            }
+            .json-display-container {
+                max-height: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>D&D Dice Roller</h1>
+        
+        <div class="dice-bag">
+            <h3>Dice Bag:</h3>
+            <div class="dice-list" id="dice-list"></div>
+            <p id="dice-string">No dice selected</p>
+        </div>
+        
+        <div class="dice-selection">
+            <h3>Select Dice:</h3>
+            <div class="dice-buttons">
+                <button class="dice-button" data-type="4">d4</button>
+                <button class="dice-button" data-type="6">d6</button>
+                <button class="dice-button" data-type="8">d8</button>
+                <button class="dice-button" data-type="10">d10</button>
+                <button class="dice-button" data-type="12">d12</button>
+                <button class="dice-button" data-type="20">d20</button>
+                <button class="dice-button" data-type="100">d100</button>
+            </div>
+        </div>
+        
+        <div class="action-buttons">
+            <button class="action-button clear-button" id="clear-button">Clear All</button>
+            <button class="action-button roll-button" id="roll-button">Roll Dice</button>
+        </div>
+        
+        <div class="error" id="error-message"></div>
+    </div>
+
+    <!-- Quantity Modal with Numpad -->
+    <div class="modal-overlay" id="quantity-modal">
+        <div class="modal">
+            <h3 id="modal-title">Add d6</h3>
+            <div class="modal-content">
+                <div class="quantity-display" id="quantity-display">1</div>
+                <div class="numpad">
+                    <button class="numpad-button" data-number="1">1</button>
+                    <button class="numpad-button" data-number="2">2</button>
+                    <button class="numpad-button" data-number="3">3</button>
+                    <button class="numpad-button" data-number="4">4</button>
+                    <button class="numpad-button" data-number="5">5</button>
+                    <button class="numpad-button" data-number="6">6</button>
+                    <button class="numpad-button" data-number="7">7</button>
+                    <button class="numpad-button" data-number="8">8</button>
+                    <button class="numpad-button" data-number="9">9</button>
+                    <button class="numpad-button control" id="backspace-button">⌫</button>
+                    <button class="numpad-button" data-number="0">0</button>
+                    <button class="numpad-button control" id="clear-numpad-button">C</button>
+                </div>
+                <div class="error" id="modal-error"></div>
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-button cancel-button" id="cancel-button">Cancel</button>
+                <button class="modal-button add-button" id="add-button">Add</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JSON Display Modal -->
+    <div class="modal-overlay" id="json-modal">
+        <div class="modal">
+            <h3>Roll Result</h3>
+            <div class="modal-content">
+                <p>Here's the JSON that would be sent to the server:</p>
+                <div class="json-display-container">
+                    <pre class="json-display" id="json-display"></pre>
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-button add-button" id="close-json-button">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Dice Manager Class
+        class DiceManager {
+            constructor() {
+                this.diceEntries = [];
+                this.currentDiceType = null;
+            }
+
+            formatDiceString() {
+                return this.diceEntries.map(entry => `${entry.quantity}d${entry.type}`).join(' + ') || 'No dice selected';
+            }
+
+            addDice(type, quantity) {
+                this.diceEntries.push({ type, quantity });
+            }
+
+            removeDice(index) {
+                this.diceEntries.splice(index, 1);
+            }
+
+            clearAll() {
+                this.diceEntries = [];
+            }
+
+            generateRequestData(userId = "local-user") {
+                return {
+                    userId,
+                    requestId: self.crypto.randomUUID(),
+                    dice: this.diceEntries,
+                    createdAt: new Date().toISOString()
+                };
+            }
+
+            getTotalDice() {
+                return this.diceEntries.reduce((sum, entry) => sum + entry.quantity, 0);
+            }
+        }
+
+        // Modal Manager Class
+        class ModalManager {
+            constructor() {
+                this.quantityModal = document.getElementById('quantity-modal');
+                this.jsonModal = document.getElementById('json-modal');
+                this.modalTitle = document.getElementById('modal-title');
+                this.quantityDisplay = document.getElementById('quantity-display');
+                this.modalError = document.getElementById('modal-error');
+                this.jsonDisplay = document.getElementById('json-display');
+                this.currentQuantity = '1';
+            }
+
+            showQuantityModal(diceType) {
+                this.modalTitle.textContent = `Add d${diceType}`;
+                this.currentQuantity = '1';
+                this.updateQuantityDisplay();
+                this.clearModalError();
+                this.quantityModal.classList.add('active');
+            }
+
+            showJsonModal(jsonData) {
+                this.jsonDisplay.textContent = JSON.stringify(jsonData, null, 2);
+                this.jsonModal.classList.add('active');
+            }
+
+            hideModal(modalType) {
+                if (modalType === 'quantity') {
+                    this.quantityModal.classList.remove('active');
+                } else if (modalType === 'json') {
+                    this.jsonModal.classList.remove('active');
+                }
+            }
+
+            updateQuantityDisplay() {
+                this.quantityDisplay.textContent = this.currentQuantity || '0';
+            }
+
+            clearModalError() {
+                this.modalError.textContent = '';
+            }
+
+            showModalError(message) {
+                this.modalError.textContent = message;
+            }
+        }
+
+        // Main Application
+        document.addEventListener('DOMContentLoaded', function() {
+            const diceManager = new DiceManager();
+            const modalManager = new ModalManager();
+            
+            // DOM elements
+            const diceButtons = document.querySelectorAll('.dice-button');
+            const diceList = document.getElementById('dice-list');
+            const diceString = document.getElementById('dice-string');
+            const clearButton = document.getElementById('clear-button');
+            const rollButton = document.getElementById('roll-button');
+            const errorMessage = document.getElementById('error-message');
+            
+            // Numpad elements
+            const numpadButtons = document.querySelectorAll('.numpad-button[data-number]');
+            const backspaceButton = document.getElementById('backspace-button');
+            const clearNumpadButton = document.getElementById('clear-numpad-button');
+            const cancelButton = document.getElementById('cancel-button');
+            const addButton = document.getElementById('add-button');
+            const closeJsonButton = document.getElementById('close-json-button');
+            
+            // Helper functions
+            function updateDiceDisplay() {
+                diceString.textContent = diceManager.formatDiceString();
+                
+                // Update the dice list
+                diceList.innerHTML = '';
+                diceManager.diceEntries.forEach((entry, index) => {
+                    const diceEntry = document.createElement('div');
+                    diceEntry.className = 'dice-entry';
+                    diceEntry.innerHTML = `
+                        <span>${entry.quantity}d${entry.type}</span>
+                        <button class="remove-button" data-index="${index}">×</button>
+                    `;
+                    diceList.appendChild(diceEntry);
+                });
+                
+                // Add event listeners to remove buttons
+                document.querySelectorAll('.remove-button').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const index = parseInt(this.getAttribute('data-index'));
+                        diceManager.removeDice(index);
+                        updateDiceDisplay();
+                    });
+                });
+            }
+            
+            function showError(message) {
+                errorMessage.textContent = message;
+                setTimeout(() => {
+                    errorMessage.textContent = '';
+                }, 3000);
+            }
+            
+            // Event listeners
+            diceButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const diceType = parseInt(this.getAttribute('data-type'));
+                    modalManager.showQuantityModal(diceType);
+                });
+            });
+            
+            // Numpad functionality
+            numpadButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const number = this.getAttribute('data-number');
+                    if (modalManager.currentQuantity === '0' || modalManager.currentQuantity === '1') {
+                        modalManager.currentQuantity = number;
+                    } else {
+                        modalManager.currentQuantity += number;
+                    }
+                    
+                    // Limit to 3 digits
+                    if (modalManager.currentQuantity.length > 3) {
+                        modalManager.currentQuantity = modalManager.currentQuantity.slice(0, 3);
+                        modalManager.showModalError('Maximum 999 dice');
+                    } else {
+                        modalManager.clearModalError();
+                    }
+                    
+                    modalManager.updateQuantityDisplay();
+                });
+            });
+            
+            backspaceButton.addEventListener('click', function() {
+                if (modalManager.currentQuantity.length > 1) {
+                    modalManager.currentQuantity = modalManager.currentQuantity.slice(0, -1);
+                } else {
+                    modalManager.currentQuantity = '1';
+                }
+                modalManager.updateQuantityDisplay();
+                modalManager.clearModalError();
+            });
+            
+            clearNumpadButton.addEventListener('click', function() {
+                modalManager.currentQuantity = '1';
+                modalManager.updateQuantityDisplay();
+                modalManager.clearModalError();
+            });
+            
+            cancelButton.addEventListener('click', function() {
+                modalManager.hideModal('quantity');
+            });
+            
+            addButton.addEventListener('click', function() {
+                const quantity = parseInt(modalManager.currentQuantity);
+                
+                if (isNaN(quantity)) {
+                    modalManager.showModalError('Please enter a valid number');
+                    return;
+                }
+                
+                if (quantity <= 0) {
+                    modalManager.showModalError('Quantity must be greater than 0');
+                    return;
+                }
+                
+                const totalDice = diceManager.getTotalDice() + quantity;
+                if (totalDice > 999) {
+                    modalManager.showModalError('Total dice cannot exceed 999');
+                    return;
+                }
+                
+                const diceType = parseInt(modalManager.modalTitle.textContent.replace('Add d', ''));
+                diceManager.addDice(diceType, quantity);
+                updateDiceDisplay();
+                modalManager.hideModal('quantity');
+            });
+            
+            clearButton.addEventListener('click', function() {
+                diceManager.clearAll();
+                updateDiceDisplay();
+            });
+            
+            rollButton.addEventListener('click', function() {
+                if (diceManager.diceEntries.length === 0) {
+                    showError('Please add at least one dice');
+                    return;
+                }
+                
+                const requestData = diceManager.generateRequestData();
+                modalManager.showJsonModal(requestData);
+            });
+            
+            closeJsonButton.addEventListener('click', function() {
+                modalManager.hideModal('json');
+            });
+            
+            // Close modals when clicking outside
+            [modalManager.quantityModal, modalManager.jsonModal].forEach(modal => {
+                modal.addEventListener('click', function(e) {
+                    if (e.target === this) {
+                        const modalType = this.id === 'quantity-modal' ? 'quantity' : 'json';
+                        modalManager.hideModal(modalType);
+                    }
+                });
+            });
+            
+            // Initialize
+            updateDiceDisplay();
+        });
+    </script>
+</body>
+</html>
